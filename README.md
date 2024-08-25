@@ -17,16 +17,18 @@ curl 'https://api.twilio.com/2010-04-01/Accounts/[REDACTED]/Messages.json' -X PO
 
 (sends a message to Gary's phone WORKS!)
 
+### Set the environment variable for the S3 bucket name
+
+```
+export POLLINATORBUCKET=pollinatorserverless
+```
+
 ## IAM
 
 ```
 cfn-lint pollinator_serverless_cft.yaml
 ```
 
-### Set the environment variable for the S3 bucket name
-```
-export POLLINATORBUCKET=pollinatorserverless
-```
 
 ### Create Bucket first as sam deploy will need it to upload code to.
 ```
@@ -66,7 +68,7 @@ sam build \
 ```
 sam deploy \
     --template-file ./.aws-sam/build/template.yaml \
-    --stack-name PollinatorServerlessStack \
+    --stack-name PollinatorServerless \
     --capabilities CAPABILITY_IAM \
     --parameter-overrides \
         S3BucketName=$POLLINATORBUCKET \
@@ -86,7 +88,7 @@ python twilio/update_twilio_webhook.py
 
 ### To delete errant stack:
 ```
-aws cloudformation delete-stack --stack-name PollinatorServerlessStack --profile g_h_scrabble
+aws cloudformation delete-stack --stack-name PollinatorServerless --profile g_h_scrabble
 ```
 
 ## Return OCR to user:

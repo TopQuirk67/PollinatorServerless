@@ -224,9 +224,9 @@ Resources:
     Metadata:
       SamResourceId: ApiGatewayMethodSmsPost
 Outputs:
-  ApiGatewayUrl:
+  ApiGatewayUrlSms:
     Description: URL of the API Gateway
     Value:
-      Fn::Sub: https://${ApiGatewayRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/
+      Fn::Sub: https://${ApiGatewayRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/sms
     Export:
-      Name: ApiGatewayUrl
+      Name: ApiGatewayUrlSms
