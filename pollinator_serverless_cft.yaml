@@ -1,0 +1,232 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Parameters:
+  TwilioAccountSid:
+    Type: String
+    Description: Twilio Account SID
+  TwilioAuthToken:
+    Type: String
+    Description: Twilio Auth Token
+Resources:
+  ApiGatewayCloudWatchRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - apigateway.amazonaws.com
+          Action: sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
+    Metadata:
+      SamResourceId: ApiGatewayCloudWatchRole
+  ApiGatewayAccount:
+    Type: AWS::ApiGateway::Account
+    Properties:
+      CloudWatchRoleArn:
+        Fn::GetAtt:
+        - ApiGatewayCloudWatchRole
+        - Arn
+    Metadata:
+      SamResourceId: ApiGatewayAccount
+  ApiGatewayRestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: PollinatorAPI
+      Description: API Gateway for Pollinator Serverless Application
+      EndpointConfiguration:
+        Types:
+        - REGIONAL
+      FailOnWarnings: true
+    Metadata:
+      SamResourceId: ApiGatewayRestApi
+  ApiGatewayDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId:
+        Ref: ApiGatewayRestApi
+      StageName: Prod
+    DependsOn:
+    - ApiGatewayMethodOcrPost
+    - ApiGatewayMethodSmsPost
+    Metadata:
+      SamResourceId: ApiGatewayDeployment
+  ApiGatewayStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      StageName:
+        Fn::Sub: Prod-${AWS::StackName}-${AWS::Region}
+      DeploymentId:
+        Ref: ApiGatewayDeployment
+      RestApiId:
+        Ref: ApiGatewayRestApi
+      MethodSettings:
+      - DataTraceEnabled: true
+        HttpMethod: '*'
+        LoggingLevel: INFO
+        ResourcePath: /*
+        MetricsEnabled: true
+      AccessLogSetting:
+        DestinationArn:
+          Fn::GetAtt:
+          - ApiGatewayLogGroup
+          - Arn
+        Format: '{"requestId":"$context.requestId","ip":"$context.identity.sourceIp","caller":"$context.identity.caller","user":"$context.identity.user","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath","status":"$context.status","protocol":"$context.protocol","responseLength":"$context.responseLength"}'
+    Metadata:
+      SamResourceId: ApiGatewayStage
+  ApiGatewayLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/apigateway/${ApiGatewayRestApi}
+      RetentionInDays: 14
+    Metadata:
+      SamResourceId: ApiGatewayLogGroup
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action: sts:AssumeRole
+      Path: /
+      Policies:
+      - PolicyName: LambdaExecutionPolicy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Resource: arn:aws:logs:*:*:*
+          - Effect: Allow
+            Action:
+            - rekognition:DetectText
+            Resource: '*'
+    Metadata:
+      SamResourceId: LambdaExecutionRole
+  WebhookLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: webhook.lambda_handler
+      Runtime: python3.10
+      CodeUri: s3://pollinatorserverless/5c3e0e23999aa09b253e5e44890870b0
+      MemorySize: 128
+      Timeout: 30
+      Role:
+        Fn::GetAtt:
+        - LambdaExecutionRole
+        - Arn
+      Environment:
+        Variables:
+          OCR_API_ENDPOINT:
+            Fn::Sub: https://${ApiGatewayRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/ocr
+          TWILIO_ACCOUNT_SID:
+            Ref: TwilioAccountSid
+          TWILIO_AUTH_TOKEN:
+            Ref: TwilioAuthToken
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: ApiGatewayRestApi
+            Path: /sms
+            Method: post
+    Metadata:
+      SamResourceId: WebhookLambdaFunction
+  OcrLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: ocr.lambda_handler
+      Runtime: python3.10
+      CodeUri: s3://pollinatorserverless/6205b401cbb1f4e4aad45169674d5da0
+      MemorySize: 128
+      Timeout: 30
+      Role:
+        Fn::GetAtt:
+        - LambdaExecutionRole
+        - Arn
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: ApiGatewayRestApi
+            Path: /ocr
+            Method: post
+    Metadata:
+      SamResourceId: OcrLambdaFunction
+  ApiGatewayResourceOcr:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Fn::GetAtt:
+        - ApiGatewayRestApi
+        - RootResourceId
+      PathPart: ocr
+      RestApiId:
+        Ref: ApiGatewayRestApi
+    Metadata:
+      SamResourceId: ApiGatewayResourceOcr
+  ApiGatewayResourceSms:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Fn::GetAtt:
+        - ApiGatewayRestApi
+        - RootResourceId
+      PathPart: sms
+      RestApiId:
+        Ref: ApiGatewayRestApi
+    Metadata:
+      SamResourceId: ApiGatewayResourceSms
+  ApiGatewayMethodOcrPost:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: POST
+      ResourceId:
+        Ref: ApiGatewayResourceOcr
+      RestApiId:
+        Ref: ApiGatewayRestApi
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${OcrLambdaFunction.Arn}/invocations
+    Metadata:
+      SamResourceId: ApiGatewayMethodOcrPost
+  ApiGatewayMethodSmsPost:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: POST
+      ResourceId:
+        Ref: ApiGatewayResourceSms
+      RestApiId:
+        Ref: ApiGatewayRestApi
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${WebhookLambdaFunction.Arn}/invocations
+    Metadata:
+      SamResourceId: ApiGatewayMethodSmsPost
+Outputs:
+  ApiGatewayUrl:
+    Description: URL of the API Gateway
+    Value:
+      Fn::Sub: https://${ApiGatewayRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/
+    Export:
+      Name: ApiGatewayUrl
