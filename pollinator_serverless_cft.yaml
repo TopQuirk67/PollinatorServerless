@@ -7,7 +7,42 @@ Parameters:
   TwilioAuthToken:
     Type: String
     Description: Twilio Auth Token
+  TwilioPhoneNumber:
+    Type: String
+    Description: Twilio Phone Number
+  S3ArtifactBucketName:
+    Type: String
+    Description: Bucket for template artifacts
+  S3OutputBucketName:
+    Type: String
+    Description: Public bucket for output objects 
 Resources:
+# Implmenting individual lambda layers:
+# REMEMBER TO INCLUDE MASTER.HTML AND GO.HTML in the package for flaskapp lambda!
+  # MyLayer1:
+  #   Type: AWS::Lambda::LayerVersion
+  #   Properties:
+  #     LayerName: my-layer-1
+  #     Description: Dependencies for Lambda function 1
+  #     Content:
+  #       S3Bucket: YOUR_S3_BUCKET_NAME
+  #       S3Key: lambda_layer/.../.../.../layer1.zip # Get this right!
+  #     CompatibleRuntimes:
+  #       - python3.9
+  # MyLambdaFunction1:
+  #   Type: AWS::Lambda::Function
+  #   Properties:
+  #     FunctionName: MyLambdaFunction1
+  #     Handler: views.lambda_handler
+  #     Runtime: python3.9
+  #     Role: arn:aws:iam::YOUR_ACCOUNT_ID:role/YOUR_LAMBDA_EXECUTION_ROLE
+  #     Code:
+  #       S3Bucket: YOUR_S3_BUCKET_NAME
+  #       S3Key: path/to/your/lambda_function_code.zip
+  #     Layers:
+  #       - Ref: MyLayer1
+  #     Timeout: 30
+  #     MemorySize: 128
   ApiGatewayCloudWatchRole:
     Type: AWS::IAM::Role
     Properties:
@@ -113,6 +148,19 @@ Resources:
             Action:
             - rekognition:DetectText
             Resource: '*'
+          - Effect: "Allow"
+            Action:
+              - "s3:PutObject"
+            Resource: 
+              - !Sub "arn:aws:s3:::${S3OutputBucketName}/*"
+          - Effect: "Allow"
+            Action: 
+              - "s3:PutObject"
+              - "s3:GetObject"
+              - "s3:ListBucket"
+            Resource: 
+              - "arn:aws:s3:::${S3ArtifactBucketName}"
+              - "arn:aws:s3:::${S3ArtifactBucketName}/*"
     Metadata:
       SamResourceId: LambdaExecutionRole
   WebhookLambdaFunction:
@@ -120,7 +168,7 @@ Resources:
     Properties:
       Handler: webhook.lambda_handler
       Runtime: python3.10
-      CodeUri: s3://pollinatorserverless/5c3e0e23999aa09b253e5e44890870b0
+      CodeUri: lambda_functions/webhook/
       MemorySize: 128
       Timeout: 30
       Role:
@@ -135,6 +183,10 @@ Resources:
             Ref: TwilioAccountSid
           TWILIO_AUTH_TOKEN:
             Ref: TwilioAuthToken
+          TWILIO_PHONE_NUMBER:
+            Ref: TwilioPhoneNumber
+          OUTPUT_BUCKET:
+            Ref: S3OutputBucketName
       Events:
         Api:
           Type: Api
@@ -150,7 +202,7 @@ Resources:
     Properties:
       Handler: ocr.lambda_handler
       Runtime: python3.10
-      CodeUri: s3://pollinatorserverless/6205b401cbb1f4e4aad45169674d5da0
+      CodeUri: lambda_functions/ocr/
       MemorySize: 128
       Timeout: 30
       Role:

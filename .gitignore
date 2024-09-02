@@ -1,0 +1,3 @@
+# Ignore the lambda_layers directory and all its contents
+lambda_layers/
+test_code/
