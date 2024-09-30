@@ -152,20 +152,57 @@ def send_mms(to_phone_number, media_url):
     
     return message.sid
 
-# def send_mms(to_phone_number, message_body):
-#     twilio_account_sid = os.environ['TWILIO_ACCOUNT_SID']
-#     twilio_auth_token = os.environ['TWILIO_AUTH_TOKEN']
-#     twilio_phone_number = os.environ['TWILIO_PHONE_NUMBER']
-    
-#     client = Client(twilio_account_sid, twilio_auth_token)
-    
-#     message = client.messages.create(
-#         body=message_body,
-#         from_=twilio_phone_number,
-#         to=to_phone_number
-#     )
-    
-#     return message.sid
+def create_image_from_html(html_content):
+    try:
+        # Prepare the payload for createimage Lambda
+        s3_bucket = os.environ['OUTPUT_BUCKET']
+        s3_key = f"images/{uuid.uuid4()}.jpg"
+        createimage_lambda_function = os.environ['CREATEIMAGE_LAMBDA_FUNCTION']
+        createimage_payload = json.dumps({
+            'body': {
+                'html_content': html_content
+            }
+        })
+
+        # Invoke the createimage Lambda function
+
+        response = lambda_client.invoke(
+            FunctionName=createimage_lambda_function,  
+            InvocationType='RequestResponse',
+            Payload=createimage_payload
+        )
+
+        # Parse the response from createimage Lambda
+        response_payload = json.loads(response['Payload'].read())
+        if response['StatusCode'] != 200:
+            raise Exception(f"Error invoking Lambda function: {response_payload}")
+
+        # Extract the image URL from the response payload
+        body = json.loads(response_payload['body'])
+        if 'image_url' not in body:
+            raise Exception("image_url not found in Lambda response")
+
+        image_url = body['image_url']
+        return image_url
+        # jpg_base64 = json.loads(response_payload['body']).get('image', '')
+
+        # # Decode the base64 string to get the PDF data
+        # jpg_data = base64.b64decode(jpg_base64)
+
+        # # Save the PDF to S3
+        # s3_bucket = os.environ['OUTPUT_BUCKET']
+        # s3_key = f"images/{uuid.uuid4()}.jpg"
+        # s3_client = boto3.client('s3')
+        # s3_client.put_object(Bucket=s3_bucket, Key=s3_key, Body=jpg_data)
+
+        # # Generate the S3 URL
+        # img_url = f"https://{s3_bucket}.s3.amazonaws.com/{s3_key}"
+        # print(img_url)
+        # return img_url
+
+    except Exception as e:
+        print(f"Error in create_image_from_html: {e}")
+        return None
 
 def lambda_handler(event, context):
     # Extract image URLs from the event
@@ -207,14 +244,39 @@ def lambda_handler(event, context):
         html_content = create_html_table(combined_results)
         logger.info("HTML:\n",html_content)
         
-        s3_bucket = os.environ['OUTPUT_BUCKET']
-        s3_key = f"images/{uuid.uuid4()}.pdf"
-        
-        image_url = create_image_from_html(html_content, s3_bucket, s3_key)
-        results_message = image_url
-        
-        # Call send_mms with the correct arguments
-        message_sid = send_mms(from_phone_number, results_message)
+        if html_content is None:
+            logger.error("Failed to generate HTML content")
+            return {
+                'statusCode': 500,
+                'body': json.dumps({'error': 'Failed to generate HTML content'})
+            }
+
+
+        logger.info("HTML:\n%s",html_content)
+
+        # # Generate an image from the HTML content
+        # image_url = create_image_from_html(html_content)
+
+        # # Send the S3 URL to Twilio
+        # results_message = s3_url
+        # message_sid = send_mms(from_phone_number, results_message)
+        # print(f"Message sent with SID: {message_sid}")
+
+        # return {
+        #     'statusCode': 200,
+        #     'body': 'Results sent to your phone number'
+        # }
+        # Create image from HTML and get the S3 URL
+        image_url = create_image_from_html(html_content)
+
+        if not image_url:
+            return {
+                'statusCode': 500,
+                'body': json.dumps({'error': 'Failed to create image from HTML'})
+            }
+
+        # Send the S3 URL to Twilio
+        message_sid = send_mms(from_phone_number, image_url)
         print(f"Message sent with SID: {message_sid}")
     
     return {

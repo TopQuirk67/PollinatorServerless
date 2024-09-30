@@ -16,10 +16,67 @@ Parameters:
   S3OutputBucketName:
     Type: String
     Description: Public bucket for output objects 
+  RapidApiEndpoint:
+    Type: String
+    Description: The RapidAPI endpoint URL for HTML to image conversion
+  RapidApiHost:
+    Type: String
+    Description: The RapidAPI host
+  RapidApiKey:
+    Type: String
+    Description: The RapidAPI key
 Resources:
-# Implmenting individual lambda layers:
-# REMEMBER TO INCLUDE MASTER.HTML AND GO.HTML in the package for flaskapp lambda!
-  # MyLayer1:
+  LambdaLayerWebhook:
+    Type: AWS::Lambda::LayerVersion
+    Properties:
+      LayerName: lambda-layer-webhook
+      Description: Dependencies for Webhook Lambda
+      Content:
+        S3Bucket: !Ref S3ArtifactBucketName
+        S3Key: lambda_layers/webhook/webhook.zip
+      CompatibleRuntimes:
+        - python3.9
+  LambdaLayerOcr:
+    Type: AWS::Lambda::LayerVersion
+    Properties:
+      LayerName: lambda-layer-ocr
+      Description: Dependencies for Ocr Lambda
+      Content:
+        S3Bucket: !Ref S3ArtifactBucketName
+        S3Key: lambda_layers/ocr/ocr.zip
+      CompatibleRuntimes:
+        - python3.9
+  LambdaLayerFlaskapp:
+    Type: AWS::Lambda::LayerVersion
+    Properties:
+      LayerName: lambda-layer-flaskapp
+      Description: Dependencies for Flaskapp Lambda
+      Content:
+        S3Bucket: !Ref S3ArtifactBucketName
+        S3Key: lambda_layers/flaskapp/flaskapp.zip
+      CompatibleRuntimes:
+        - python3.9
+  HTMLtoImageLayer:
+    Type: AWS::Lambda::LayerVersion
+    Properties:
+      LayerName: html-to-image-layer
+      Description: Layer with requests library
+      Content:
+        S3Bucket: !Ref S3ArtifactBucketName
+        S3Key: lambda_layers/html-to-image/html-to-image.zip
+      CompatibleRuntimes:
+        - python3.9
+  # PuppeteerLayer:
+  #   Type: AWS::Lambda::LayerVersion
+  #   Properties:
+  #     LayerName: puppeteer-layer
+  #     Description: "Layer containing Puppeteer and Chromium"
+  #     Content:
+  #       S3Bucket: !Ref S3ArtifactBucketName
+  #       S3Key: lambda_layers/html-to-image/puppeteer-layer.zip
+  #     CompatibleRuntimes:
+  #       - nodejs20.x
+  # LambdaLayerCreateimage:
   #   Type: AWS::Lambda::LayerVersion
   #   Properties:
   #     LayerName: my-layer-1
@@ -234,47 +291,42 @@ Resources:
   ApiGatewayResourceSms:
     Type: AWS::ApiGateway::Resource
     Properties:
-      ParentId:
+      Handler: html_to_image_api.lambda_handler
+      Runtime: python3.9
+      Code:
+        S3Bucket: !Ref S3ArtifactBucketName
+        S3Key: lambda_functions/html-to-image/html-to-image.zip
+      Layers:
+        - !Ref HTMLtoImageLayer
+      MemorySize: 128
+      Timeout: 30
+      Environment:
+        Variables:
+          RAPIDAPI_ENDPOINT: !Ref RapidApiEndpoint
+          RAPIDAPI_HOST: !Ref RapidApiHost
+          RAPIDAPI_KEY: !Ref RapidApiKey
+      Role:
         Fn::GetAtt:
-        - ApiGatewayRestApi
-        - RootResourceId
-      PathPart: sms
-      RestApiId:
-        Ref: ApiGatewayRestApi
-    Metadata:
-      SamResourceId: ApiGatewayResourceSms
-  ApiGatewayMethodOcrPost:
-    Type: AWS::ApiGateway::Method
-    Properties:
-      AuthorizationType: NONE
-      HttpMethod: POST
-      ResourceId:
-        Ref: ApiGatewayResourceOcr
-      RestApiId:
-        Ref: ApiGatewayRestApi
-      Integration:
-        IntegrationHttpMethod: POST
-        Type: AWS_PROXY
-        Uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${OcrLambdaFunction.Arn}/invocations
-    Metadata:
-      SamResourceId: ApiGatewayMethodOcrPost
-  ApiGatewayMethodSmsPost:
-    Type: AWS::ApiGateway::Method
-    Properties:
-      AuthorizationType: NONE
-      HttpMethod: POST
-      ResourceId:
-        Ref: ApiGatewayResourceSms
-      RestApiId:
-        Ref: ApiGatewayRestApi
-      Integration:
-        IntegrationHttpMethod: POST
-        Type: AWS_PROXY
-        Uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${WebhookLambdaFunction.Arn}/invocations
-    Metadata:
-      SamResourceId: ApiGatewayMethodSmsPost
+        - LambdaExecutionRole
+        - Arn
+      # Layers:
+      #   - !Ref PuppeteerLayer
+  # CreateimageLambdaFunction:
+  #   Type: AWS::Lambda::Function
+  #   Properties:
+  #     Handler: createimage.lambda_handler
+  #     Runtime: python3.9
+  #     Code:
+  #       S3Bucket: !Ref S3ArtifactBucketName
+  #       S3Key: lambda_functions/createimage/createimage_package.zip
+  #     Layers:
+  #       - !Ref CreateImageLayerArn
+  #     MemorySize: 128
+  #     Timeout: 30
+  #     Role:
+  #       Fn::GetAtt:
+  #       - LambdaExecutionRole
+  #       - Arn
 Outputs:
   ApiGatewayUrlSms:
     Description: URL of the API Gateway

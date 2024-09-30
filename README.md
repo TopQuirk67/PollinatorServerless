@@ -1,12 +1,20 @@
 # PollinatorServerless
 
 ## TODOs
+<<<<<<< HEAD
 - Implement four lambdas (do I have all of them??)
 - Implement and upload 4 lambda layers
 - push current version and start new layers branch
 - implement html to pdf; test on Lambda with put to S3
 - Implement the data fetch from nytbee.com
 - implement the comparisons in the current pollinator
+=======
+- push to master
+- git squash
+- fix the page too big problem
+- Convert 2 API accounts to paid
+- tear down everything and follow these instructions from scratch
+>>>>>>> 5e99718 (working version with rapidapi)
 - reduce logging in lambdas
 - document how to use the twilio updater
 - include an architecture diagram
@@ -23,7 +31,15 @@ $TWILIOPHONENUMBER
 $TWILIOPHONENUMBERSID
 $TWILIOACCTSID
 $TWILIOAUTHTOKEN
+$RAPIDAPI_ENDPOINT
+$RAPIDAPI_HOST
+$RAPIDAPI_KEY
 ```
+
+#TODO: git squash this commit and delete the dev_tesseract branch locally
+The commits to squash is:
+master f347594fd8f32edd44f4176cebcc98bcffa41175
+dev_tesseract f347594fd8f32edd44f4176cebcc98bcffa41175
 
 We need environmental variables for two S3 buckets:
 $POLLINATORARTIFACTBUCKET: this is where the Lambda layers will go
@@ -109,12 +125,12 @@ cd lambda_functions
 mkdir -p lambda_layer/webhook/python
 mkdir -p lambda_layer/ocr/python
 mkdir -p lambda_layer/flaskapp/python
-mkdir -p lambda_layer/createimage/python
-python3.9 -m pip install install requests twilio boto3 -t lambda_layer/webhook/python
+mkdir -p lambda_layer/html-to-image/python
+python3.9 -m pip install requests twilio boto3 -t lambda_layer/webhook/python
 python3.9 -m pip install boto3 -t lambda_layer/ocr/python
-python3.9 -m pipenv install flask flask_lambda requests beautifulsoup4 pytz -t lambda_layer/flaskapp/python
-python3.9 -m weasyprint -t lambda_layer/createimage/python
-cd lambda_layer/webhook
+python3.9 -m pip install flask==2.0.3 werkzeug==2.0.3 flask_lambda requests beautifulsoup4 pytz -t lambda_layer/flaskapp/python
+python3.9 -m pip install requests -t lambda_layer/html-to-image/python
+cd lambda_layer/html-to-image
 zip -r webhook.zip python
 aws s3 cp webhook.zip s3://$POLLINATORARTIFACTBUCKET/lambda_layers/webhook/webhook.zip --profile g_h_scrabble
 cd ../ocr
@@ -123,26 +139,19 @@ aws s3 cp ocr.zip s3://$POLLINATORARTIFACTBUCKET/lambda_layers/ocr/ocr.zip --pro
 cd ../flaskapp
 zip -r flaskapp.zip python
 aws s3 cp flaskapp.zip s3://$POLLINATORARTIFACTBUCKET/lambda_layers/flaskapp/flaskapp.zip --profile g_h_scrabble
-cd ../createimage
-zip -r createimage.zip python
-aws s3 cp createimage.zip s3://$POLLINATORARTIFACTBUCKET/lambda_layers/createimage/createimage.zip --profile g_h_scrabble
+cd ../html_to_image
+zip -r html-to-image.zip python
+aws s3 cp html-to-image.zip s3://$POLLINATORARTIFACTBUCKET/lambda_layers/html-to-image/html-to-image.zip --profile g_h_scrabble
 ```
-<!-- python3.9 -m pip install flask==2.0.3 werkzeug==2.0.3 flask_lambda requests beautifulsoup4 pytz -t lambda_layer/flaskapp/python -->
 
-
-
-mkdir -p layer/python
-cd layer/python
-pip install imgkit -t .
-pip install wkhtmltopdf -t .
-pip install twilio -t .
-```
+<!-- Setting up a single layer for index.js to use.  This layer is from https://github.com/alixaxel/chrome-aws-lambda where the readme gives this set of instructions:
 
 ```
 cd ..
 zip -r9 ../imgkit_layer.zip .
 cd ..
-```
+aws s3 cp puppeteer-layer.zip s3://$POLLINATORARTIFACTBUCKET/lambda_layers/html-to-image/puppeteer-layer.zip --profile g_h_scrabble
+``` -->
 
 ```
 aws s3 cp imgkit_layer.zip s3://$POLLINATORARTIFACTBUCKET/layer/imgkit_layer.zip --profile g_h_scrabble
@@ -171,23 +180,38 @@ Resources:
 If it's not already installed, you will need to install wkhtmltopdf so that imgkit can use it.  If you haven't done sam build yet, this may not work since the .aws-sam directory structure is unbuilt.  You'll just have to come back and do this after doing one round of sam build
 
 ```
-brew install wkhtmltopdf
-brew install rpm2cpio
-wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox-0.12.6-1.centos7.x86_64.rpm
-rpm2cpio wkhtmltox-0.12.6-1.centos7.x86_64.rpm | cpio -idmv
-cp /usr/local/bin/wkhtmltoimage .aws-sam/build/WebhookLambdaFunction/
-rm wkhtmltox-0.12.6-1.centos7.x86_64.rpm
+cd lambda_functions/webhook && \
+zip -r webhook_package.zip webhook.py  && \
+aws s3 cp webhook_package.zip s3://$POLLINATORARTIFACTBUCKET/lambda_functions/webhook/webhook_package.zip && \
+rm webhook_package.zip
+
+cd ../ocr  && \
+zip -r ocr_package.zip ocr.py  && \
+aws s3 cp ocr_package.zip s3://$POLLINATORARTIFACTBUCKET/lambda_functions/ocr/ocr_package.zip && \
+rm ocr_package.zip
+
+cd ../flaskapp && \
+zip -r flaskapp_package.zip flaskapp.py static templates && \
+aws s3 cp flaskapp_package.zip s3://$POLLINATORARTIFACTBUCKET/lambda_functions/flaskapp/flaskapp_package.zip && \
+rm flaskapp_package.zip 
+
+cd ../html-to-image && \
+zip -r html-to-image.zip html_to_image_api.py && \
+aws s3 cp html-to-image.zip s3://$POLLINATORARTIFACTBUCKET/lambda_functions/html-to-image/html-to-image.zip && \
+rm html-to-image.zip 
+
+cd ../..
 ```
 
 
+<!-- Node js lambda function:
 
 ```
-cd lambda_functions/webhook
-pipenv --python 3.10
-<!-- pipenv install boto3 requests twilio imgkit weasyprint-->
-pipenv install boto3 requests twilio pillow
-pipenv run pip freeze > requirements.txt
-```
+cd lambda_functions/html-to-image
+zip -r html-to-image.zip .
+aws s3 cp html-to-image.zip s3://$POLLINATORARTIFACTBUCKET/lambda_functions/html-to-image/html-to-image.zip --profile g_h_scrabble
+cd ../..
+``` -->
 
 ```
 cd lambda_functions/ocr
@@ -208,6 +232,9 @@ aws cloudformation deploy \
         TwilioAccountSid=$TWILIOACCTSID \
         TwilioAuthToken=$TWILIOAUTHTOKEN \
         TwilioPhoneNumber=$TWILIOPHONENUMBER \
+        RapidApiEndpoint=$RAPIDAPI_ENDPOINT \
+        RapidApiHost=$RAPIDAPI_HOST \
+        RapidApiKey=$RAPIDAPI_KEY \
     --profile g_h_scrabble
 ```
 

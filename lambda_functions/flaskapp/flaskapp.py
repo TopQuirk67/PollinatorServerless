@@ -4,11 +4,10 @@ from flask_lambda import FlaskLambda
 import requests
 from bs4 import BeautifulSoup
 from collections import Counter,OrderedDict,defaultdict
-import os
-import glob
+# import glob
 import json
 import re
-import time
+# import time
 from datetime import datetime
 from pytz import timezone, utc
 
@@ -118,7 +117,12 @@ def get_nytbee_word_list(words):
             todays_lists = item['attributes']['data']['words']
     nytbee = {}
     all_words = []
-    for list_nletters in todays_lists:
+    # strip leading and trailing spaces from words 
+    processed_lists = []
+    for this_list in todays_lists:
+        new_list = [word.strip() for word in this_list]
+        processed_lists.append(new_list)
+    for list_nletters in processed_lists:
         if len(list_nletters)>0:
             nletters = len(list_nletters[0])
             nwords   = len(list_nletters)
