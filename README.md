@@ -1,20 +1,11 @@
 # PollinatorServerless
 
 ## TODOs
-<<<<<<< HEAD
-- Implement four lambdas (do I have all of them??)
-- Implement and upload 4 lambda layers
-- push current version and start new layers branch
-- implement html to pdf; test on Lambda with put to S3
-- Implement the data fetch from nytbee.com
-- implement the comparisons in the current pollinator
-=======
 - push to master
 - git squash
 - fix the page too big problem
 - Convert 2 API accounts to paid
 - tear down everything and follow these instructions from scratch
->>>>>>> 5e99718 (working version with rapidapi)
 - reduce logging in lambdas
 - document how to use the twilio updater
 - include an architecture diagram
