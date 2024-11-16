@@ -1,5 +1,4 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Transform: AWS::Serverless-2016-10-31
 Parameters:
   TwilioAccountSid:
     Type: String
@@ -16,90 +15,46 @@ Parameters:
   S3OutputBucketName:
     Type: String
     Description: Public bucket for output objects 
-  RapidApiEndpoint:
-    Type: String
-    Description: The RapidAPI endpoint URL for HTML to image conversion
-  RapidApiHost:
-    Type: String
-    Description: The RapidAPI host
-  RapidApiKey:
-    Type: String
-    Description: The RapidAPI key
+  # RapidApiEndpoint:
+  #   Type: String
+  #   Description: The RapidAPI endpoint URL for HTML to image conversion
+  # RapidApiHost:
+  #   Type: String
+  #   Description: The RapidAPI host
+  # RapidApiKey:
+  #   Type: String
+  #   Description: The RapidAPI key
 Resources:
-  LambdaLayerWebhook:
-    Type: AWS::Lambda::LayerVersion
-    Properties:
-      LayerName: lambda-layer-webhook
-      Description: Dependencies for Webhook Lambda
-      Content:
-        S3Bucket: !Ref S3ArtifactBucketName
-        S3Key: lambda_layers/webhook/webhook.zip
-      CompatibleRuntimes:
-        - python3.9
-  LambdaLayerOcr:
-    Type: AWS::Lambda::LayerVersion
-    Properties:
-      LayerName: lambda-layer-ocr
-      Description: Dependencies for Ocr Lambda
-      Content:
-        S3Bucket: !Ref S3ArtifactBucketName
-        S3Key: lambda_layers/ocr/ocr.zip
-      CompatibleRuntimes:
-        - python3.9
-  LambdaLayerFlaskapp:
-    Type: AWS::Lambda::LayerVersion
-    Properties:
-      LayerName: lambda-layer-flaskapp
-      Description: Dependencies for Flaskapp Lambda
-      Content:
-        S3Bucket: !Ref S3ArtifactBucketName
-        S3Key: lambda_layers/flaskapp/flaskapp.zip
-      CompatibleRuntimes:
-        - python3.9
-  HTMLtoImageLayer:
-    Type: AWS::Lambda::LayerVersion
-    Properties:
-      LayerName: html-to-image-layer
-      Description: Layer with requests library
-      Content:
-        S3Bucket: !Ref S3ArtifactBucketName
-        S3Key: lambda_layers/html-to-image/html-to-image.zip
-      CompatibleRuntimes:
-        - python3.9
-  # PuppeteerLayer:
+  # LambdaLayerWebhook:
   #   Type: AWS::Lambda::LayerVersion
   #   Properties:
-  #     LayerName: puppeteer-layer
-  #     Description: "Layer containing Puppeteer and Chromium"
+  #     LayerName: lambda-layer-webhook
+  #     Description: Dependencies for Webhook Lambda
   #     Content:
   #       S3Bucket: !Ref S3ArtifactBucketName
-  #       S3Key: lambda_layers/html-to-image/puppeteer-layer.zip
-  #     CompatibleRuntimes:
-  #       - nodejs20.x
-  # LambdaLayerCreateimage:
-  #   Type: AWS::Lambda::LayerVersion
-  #   Properties:
-  #     LayerName: my-layer-1
-  #     Description: Dependencies for Lambda function 1
-  #     Content:
-  #       S3Bucket: YOUR_S3_BUCKET_NAME
-  #       S3Key: lambda_layer/.../.../.../layer1.zip # Get this right!
+  #       S3Key: lambda_layers/webhook/webhook_package.zip
   #     CompatibleRuntimes:
   #       - python3.9
-  # MyLambdaFunction1:
-  #   Type: AWS::Lambda::Function
+  # LambdaLayerOcr:
+  #   Type: AWS::Lambda::LayerVersion
   #   Properties:
-  #     FunctionName: MyLambdaFunction1
-  #     Handler: views.lambda_handler
-  #     Runtime: python3.9
-  #     Role: arn:aws:iam::YOUR_ACCOUNT_ID:role/YOUR_LAMBDA_EXECUTION_ROLE
-  #     Code:
-  #       S3Bucket: YOUR_S3_BUCKET_NAME
-  #       S3Key: path/to/your/lambda_function_code.zip
-  #     Layers:
-  #       - Ref: MyLayer1
-  #     Timeout: 30
-  #     MemorySize: 128
+  #     LayerName: lambda-layer-ocr
+  #     Description: Dependencies for Ocr Lambda
+  #     Content:
+  #       S3Bucket: !Ref S3ArtifactBucketName
+  #       S3Key: lambda_layers/ocr/ocr_package.zip
+  #     CompatibleRuntimes:
+  #       - python3.9
+  # LambdaLayerFlaskapp:
+  #   Type: AWS::Lambda::LayerVersion
+  #   Properties:
+  #     LayerName: lambda-layer-flaskapp
+  #     Description: Dependencies for Flaskapp Lambda
+  #     Content:
+  #       S3Bucket: !Ref S3ArtifactBucketName
+  #       S3Key: lambda_layers/flaskapp/flaskapp_package.zip
+  #     CompatibleRuntimes:
+  #       - python3.9
   ApiGatewayCloudWatchRole:
     Type: AWS::IAM::Role
     Properties:
@@ -114,8 +69,6 @@ Resources:
       Path: /
       ManagedPolicyArns:
       - arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
-    Metadata:
-      SamResourceId: ApiGatewayCloudWatchRole
   ApiGatewayAccount:
     Type: AWS::ApiGateway::Account
     Properties:
@@ -123,8 +76,6 @@ Resources:
         Fn::GetAtt:
         - ApiGatewayCloudWatchRole
         - Arn
-    Metadata:
-      SamResourceId: ApiGatewayAccount
   ApiGatewayRestApi:
     Type: AWS::ApiGateway::RestApi
     Properties:
@@ -134,8 +85,40 @@ Resources:
         Types:
         - REGIONAL
       FailOnWarnings: true
-    Metadata:
-      SamResourceId: ApiGatewayRestApi
+  ApiGatewayResourceSms:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Fn::GetAtt:
+          - ApiGatewayRestApi
+          - RootResourceId
+      PathPart: sms
+      RestApiId:
+        Ref: ApiGatewayRestApi
+
+  ApiGatewayMethodSmsPost:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: POST
+      ResourceId:
+        Ref: ApiGatewayResourceSms
+      RestApiId:
+        Ref: ApiGatewayRestApi
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${WebhookLambdaFunction.Arn}/invocations
+  WebhookLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Ref: WebhookLambdaFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Sub: arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayRestApi}/*/POST/sms
   ApiGatewayDeployment:
     Type: AWS::ApiGateway::Deployment
     Properties:
@@ -143,10 +126,7 @@ Resources:
         Ref: ApiGatewayRestApi
       StageName: Prod
     DependsOn:
-    - ApiGatewayMethodOcrPost
     - ApiGatewayMethodSmsPost
-    Metadata:
-      SamResourceId: ApiGatewayDeployment
   ApiGatewayStage:
     Type: AWS::ApiGateway::Stage
     Properties:
@@ -168,17 +148,52 @@ Resources:
           - ApiGatewayLogGroup
           - Arn
         Format: '{"requestId":"$context.requestId","ip":"$context.identity.sourceIp","caller":"$context.identity.caller","user":"$context.identity.user","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath","status":"$context.status","protocol":"$context.protocol","responseLength":"$context.responseLength"}'
-    Metadata:
-      SamResourceId: ApiGatewayStage
   ApiGatewayLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName:
         Fn::Sub: /aws/apigateway/${ApiGatewayRestApi}
       RetentionInDays: 14
-    Metadata:
-      SamResourceId: ApiGatewayLogGroup
-  LambdaExecutionRole:
+  WebhookLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action: sts:AssumeRole
+      Path: /
+      Policies:
+      - PolicyName: LambdaExecutionPolicy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Resource: arn:aws:logs:*:*:*
+          - Effect: Allow
+            Action:
+              - lambda:InvokeFunction
+            Resource:
+              - !GetAtt OcrLambdaFunction.Arn
+              - !GetAtt FlaskappLambdaFunction.Arn
+          - Effect: "Allow"
+            Action: 
+              - "s3:PutObject"
+              - "s3:GetObject"
+              - "s3:ListBucket"
+            Resource: 
+              - !Sub "arn:aws:s3:::${S3OutputBucketName}/*"
+              - !Sub "arn:aws:s3:::${S3OutputBucketName}"
+              - !Sub arn:aws:s3:::${S3ArtifactBucketName}/*
+              - !Sub arn:aws:s3:::${S3ArtifactBucketName}
+  OcrLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -205,37 +220,51 @@ Resources:
             Action:
             - rekognition:DetectText
             Resource: '*'
-          - Effect: "Allow"
+  FlaskappLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action: sts:AssumeRole
+      Path: /
+      Policies:
+      - PolicyName: LambdaExecutionPolicy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
             Action:
-              - "s3:PutObject"
-            Resource: 
-              - !Sub "arn:aws:s3:::${S3OutputBucketName}/*"
-          - Effect: "Allow"
-            Action: 
-              - "s3:PutObject"
-              - "s3:GetObject"
-              - "s3:ListBucket"
-            Resource: 
-              - "arn:aws:s3:::${S3ArtifactBucketName}"
-              - "arn:aws:s3:::${S3ArtifactBucketName}/*"
-    Metadata:
-      SamResourceId: LambdaExecutionRole
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Resource: arn:aws:logs:*:*:*
   WebhookLambdaFunction:
-    Type: AWS::Serverless::Function
+    Type: AWS::Lambda::Function
     Properties:
       Handler: webhook.lambda_handler
       Runtime: python3.10
-      CodeUri: lambda_functions/webhook/
+      Code:
+        S3Bucket: !Ref S3ArtifactBucketName
+        S3Key: lambda_functions/webhook/webhook_package.zip
       MemorySize: 128
-      Timeout: 30
+      Timeout: 120
       Role:
         Fn::GetAtt:
-        - LambdaExecutionRole
+        - WebhookLambdaExecutionRole
         - Arn
       Environment:
         Variables:
-          OCR_API_ENDPOINT:
-            Fn::Sub: https://${ApiGatewayRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/ocr
+          # OCR_API_ENDPOINT:
+          #   Fn::Sub: https://${ApiGatewayRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/ocr
+          OCR_LAMBDA_FUNCTION_NAME: 
+            Ref: OcrLambdaFunction
+          FLASKAPP_LAMBDA_FUNCTION_NAME: 
+            Ref: FlaskappLambdaFunction
           TWILIO_ACCOUNT_SID:
             Ref: TwilioAccountSid
           TWILIO_AUTH_TOKEN:
@@ -244,71 +273,96 @@ Resources:
             Ref: TwilioPhoneNumber
           OUTPUT_BUCKET:
             Ref: S3OutputBucketName
-      Events:
-        Api:
-          Type: Api
-          Properties:
-            RestApiId:
-              Ref: ApiGatewayRestApi
-            Path: /sms
-            Method: post
-    Metadata:
-      SamResourceId: WebhookLambdaFunction
+          # RAPIDAPI_ENDPOINT: !Ref RapidApiEndpoint
+          # RAPIDAPI_HOST: !Ref RapidApiHost
+          # RAPIDAPI_KEY: !Ref RapidApiKey
+      # Events:
+      #   Api:
+      #     Type: Api
+      #     Properties:
+      #       RestApiId:
+      #         Ref: ApiGatewayRestApi
+      #       Path: /sms
+      #       Method: post
   OcrLambdaFunction:
-    Type: AWS::Serverless::Function
+    Type: AWS::Lambda::Function
     Properties:
       Handler: ocr.lambda_handler
       Runtime: python3.10
-      CodeUri: lambda_functions/ocr/
-      MemorySize: 128
-      Timeout: 30
-      Role:
-        Fn::GetAtt:
-        - LambdaExecutionRole
-        - Arn
-      Events:
-        Api:
-          Type: Api
-          Properties:
-            RestApiId:
-              Ref: ApiGatewayRestApi
-            Path: /ocr
-            Method: post
-    Metadata:
-      SamResourceId: OcrLambdaFunction
-  ApiGatewayResourceOcr:
-    Type: AWS::ApiGateway::Resource
-    Properties:
-      ParentId:
-        Fn::GetAtt:
-        - ApiGatewayRestApi
-        - RootResourceId
-      PathPart: ocr
-      RestApiId:
-        Ref: ApiGatewayRestApi
-    Metadata:
-      SamResourceId: ApiGatewayResourceOcr
-  ApiGatewayResourceSms:
-    Type: AWS::ApiGateway::Resource
-    Properties:
-      Handler: html_to_image_api.lambda_handler
-      Runtime: python3.9
       Code:
         S3Bucket: !Ref S3ArtifactBucketName
-        S3Key: lambda_functions/html-to-image/html-to-image.zip
-      Layers:
-        - !Ref HTMLtoImageLayer
+        S3Key: lambda_functions/ocr/ocr_package.zip
       MemorySize: 128
       Timeout: 30
-      Environment:
-        Variables:
-          RAPIDAPI_ENDPOINT: !Ref RapidApiEndpoint
-          RAPIDAPI_HOST: !Ref RapidApiHost
-          RAPIDAPI_KEY: !Ref RapidApiKey
       Role:
         Fn::GetAtt:
-        - LambdaExecutionRole
+        - OcrLambdaExecutionRole
         - Arn
+  #     Events:
+  #       Api:
+  #         Type: Api
+  #         Properties:
+  #           RestApiId:
+  #             Ref: ApiGatewayRestApi
+  #           Path: /ocr
+  #           Method: post
+  # ApiGatewayResourceOcr:
+  #   Type: AWS::ApiGateway::Resource
+  #   Properties:
+  #     ParentId:
+  #       Fn::GetAtt:
+  #       - ApiGatewayRestApi
+  #       - RootResourceId
+  #     PathPart: ocr
+  #     RestApiId:
+  #       Ref: ApiGatewayRestApi
+  FlaskappLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: flaskapp.lambda_handler
+      Runtime: python3.10
+      Code:
+        S3Bucket: !Ref S3ArtifactBucketName
+        S3Key: lambda_functions/flaskapp/flaskapp_package.zip
+      MemorySize: 128
+      Timeout: 60
+      Role:
+        Fn::GetAtt:
+        - FlaskappLambdaExecutionRole
+        - Arn
+  # RapidApiEndpoint:
+  #   Type: AWS::SSM::Parameter
+  #   Properties:
+  #     Name: /rapidapi/endpoint
+  #     Type: String
+  #     Value: "https://html-css-to-image4.p.rapidapi.com/image"
+  # RapidApiHost:
+  #   Type: AWS::SSM::Parameter
+  #   Properties:
+  #     Name: /rapidapi/host
+  #     Type: String
+  #     Value: "html-css-to-image4.p.rapidapi.com"
+  # ApiGatewayResourceSms:
+  #   Type: AWS::ApiGateway::Resource
+  #   Properties:
+  #     Handler: html_to_image_api.lambda_handler
+  #     Runtime: python3.9
+  #     Code:
+  #       S3Bucket: !Ref S3ArtifactBucketName
+  #       S3Key: lambda_functions/html-to-image/html-to-image_package.zip
+  #     Layers:
+  #       - !Ref HTMLtoImageLayer
+  #     MemorySize: 128
+  #     Timeout: 30
+  #     Environment:
+  #       Variables:
+  #         RAPIDAPI_ENDPOINT: !Ref RapidApiEndpoint
+  #         RAPIDAPI_HOST: !Ref RapidApiHost
+  #         RAPIDAPI_KEY: !Ref RapidApiKey
+  #     Role:
+  #       Fn::GetAtt:
+  #       - LambdaExecutionRole
+  #       - Arn
       # Layers:
       #   - !Ref PuppeteerLayer
   # CreateimageLambdaFunction:

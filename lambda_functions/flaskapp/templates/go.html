@@ -1,0 +1,69 @@
+{% extends "master.html" %}
+{% block title %} | Spelling Bee Helper{% endblock %}
+{% block content %}
+<style>
+  html, body {
+      margin: 0;
+      padding: 20px; /* Add padding around the content */
+      font-family: Arial, sans-serif; /* Set a readable font */
+      font-size: 18px; /* Set base font size */
+  }
+  h1, h2 {
+      text-align: center; /* Center the headers */
+      font-size: 24px; /* Increase font size for headers */
+  }
+  table {
+      width: 80%; /* Adjust table width */
+      margin: 20px auto; /* Center the table */
+      border-spacing: 0; /* Remove spacing between cells */
+  }
+  table, th, td {
+      border: 2px double black; /* Set border style and width */
+  }
+  th, td {
+      padding: 10px; /* Add padding inside cells */
+      font-size: 18px; /* Increase font size for table cells */
+  }
+  th {
+      background-color: #f2f2f2; /* Light gray background for headers */
+      text-align: center; /* Center align text in headers */
+  }
+  tr:nth-child(even) td {
+      background-color: #f9f9f9; /* Very light gray for even rows */
+  }
+  .word-list {
+      text-align: left; /* Left align text in word list */
+  }
+  .word-list div {
+      width: 100%;
+      word-wrap: break-word;
+  }
+  button {
+      display: block;
+      margin: 20px auto;
+      padding: 10px 20px;
+      font-size: 18px; /* Increase font size for button */
+  }
+</style>
+<h2>Today's Puzzle:<b>{{puzzle['center_tile']}}</b>{{puzzle['petal_tiles']}}</h2>
+<table>
+    <tr><th colspan="7">Still Looking</th></tr>
+    <tr><th>#</th><th colspan="3">POINTS</th><th colspan="3">WORDS</th></tr>
+    <tr><th>letters</th><th>avail</th><th>found</th><th>needed</th><th>avail</th><th>found</th><th>needed</th></tr>
+    {% for line in query %}
+    <tr><td>{{line['k']}}</td><td>{{line['ptavail']}}</td><td>{{line['ptfound']}}</td><td>{{line['ptneeded']}}</td><td>{{line['wdavail']}}</td><td>{{line['wdfound']}}</td><td>{{line['wdneeded']}}</td></tr>
+    {% endfor %}
+</table>
+<br>
+<table>
+  <tr><th>letters</th><th>Your Words</th></tr>
+  {% for line in my_words_by_length %}
+  <tr><td>{{line['k']}}</td><td style="text-align:left"><div style = "width:271px; word-wrap: break-word">{{line['words']}}</div></td></tr>
+  {% endfor %}
+</table>
+
+<br>
+{{summary}}
+<br>
+
+{% endblock %}

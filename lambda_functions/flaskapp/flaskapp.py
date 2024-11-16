@@ -83,7 +83,7 @@ def my_words_to_dict_list_by_length(words):
 def get_nytbee_word_list(words):
 #+++++++++++++
     todays_date = get_pst_time()
-    todays_solution_file = f'./todays_solution_{todays_date}.txt'
+    # todays_solution_file = f'./todays_solution_{todays_date}.txt'
     # initialize outputs in case of errors we return something
     output_dicts = []
     summary_string = ''
@@ -156,9 +156,10 @@ def get_nytbee_word_list(words):
     if (puzz_tiles!=puzz_tiles2):
         summary_string = f'Error finding puzzle tiles {puzz_tiles} {puzz_tiles2}'
         return(output_dicts,summary_string,puzzle,my_words_by_length)
+    # this is for the webapp, not the serverless function
     # write out to today's file after deleting any old solution files
-    for f in glob.glob('todays_solution_*.txt'):
-        os.remove(f)
+    # for f in glob.glob('todays_solution_*.txt'):
+    #     os.remove(f)
 
     invalid_words = [word for word in words if word not in all_words] # NUBO
     words = [word for word in words if word in all_words] # NUBO

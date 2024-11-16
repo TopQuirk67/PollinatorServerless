@@ -10,7 +10,7 @@ twilio_auth_token = os.getenv('TWILIOAUTHTOKEN')
 
 # AWS profile and stack details
 aws_profile = 'g_h_scrabble'
-stack_name = 'PollinatorServerless'
+stack_name = 'PollinatorServerlessStack'
 output_key = 'ApiGatewayUrlSms'
 
 # Initialize boto3 session with the specified profile

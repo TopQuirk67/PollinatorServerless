@@ -11,12 +11,8 @@ def lambda_handler(event, context):
     logger.info("Received event: %s", event)
     
     try:
-        # Parse the body from the event
-        body = json.loads(event['body'])
-        # logger.info("Parsed body: %s", body)
-
-        # Extract and log the base64 image data
-        image_bytes = body['image_bytes']
+        # Extract and log the base64 image data directly from the event
+        image_bytes = event['image_bytes']
         logger.info("Image bytes: %s", image_bytes)
 
         # Decode the base64 image data
