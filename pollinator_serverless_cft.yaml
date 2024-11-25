@@ -17,7 +17,8 @@ Parameters:
     Description: Public bucket for output objects 
   SMSOutputMessage:
     Type: String
-    Description: Buzz This Way -> 
+    Description: Output message for SMS
+    Default: "Buzz This Way ->"
 Resources:
   ApiGatewayCloudWatchRole:
     Type: AWS::IAM::Role

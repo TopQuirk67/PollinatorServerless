@@ -158,9 +158,20 @@ Do this to update the url for the webhook in Twilio:
 
 ```
 cd twilio
+pipenv install boto3 twilio
 pipenv shell
 python update_twilio_webhook.py
 ```
+
+Once you have created this virtual environment, later you can just do:
+
+```
+cd twilio
+pipenv shell
+python update_twilio_webhook.py
+```
+
+
 
 ### To delete errant stack:
 ```
