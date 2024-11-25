@@ -19,6 +19,7 @@ TWILIO_ACCOUNT_SID = os.environ['TWILIO_ACCOUNT_SID']
 TWILIO_AUTH_TOKEN = os.environ['TWILIO_AUTH_TOKEN']
 TWILIO_PHONE_NUMBER = os.environ['TWILIO_PHONE_NUMBER']
 OCR_LAMBDA_FUNCTION_NAME = os.environ['OCR_LAMBDA_FUNCTION_NAME']
+OUTPUT_MESSAGE = os.environ['OUTPUT_MESSAGE']
 
 def handle_images(image_urls):
     lambda_client = boto3.client('lambda')
@@ -335,7 +336,7 @@ def lambda_handler(event, context):
         response_payload = json.loads(response['Payload'].read())
         html_content = response_payload.get('body')        
 
-        logger.info(f"HTML:\n{html_content}")
+        # logger.info(f"HTML:\n{html_content}")
         
         if html_content is None:
             logger.error("Failed to generate HTML content")
@@ -345,7 +346,7 @@ def lambda_handler(event, context):
             }
 
 
-        logger.info("HTML:\n%s",html_content)
+        # logger.info("HTML:\n%s",html_content)
 
         # # Generate an image from the HTML content
         # image_url = create_image_from_html(html_content)
@@ -373,7 +374,7 @@ def lambda_handler(event, context):
         if s3_url:
             # Send URL via Twilio
             logger.info(f"HTML content uploaded to S3: {s3_url}")
-            message_body = f"Check out the HTML content here: {s3_url}"
+            message_body = f"{OUTPUT_MESSAGE} {s3_url}"
             send_sms_via_twilio(from_phone_number, message_body)
         else:
             logger.error("Failed to upload HTML to S3 and send SMS")

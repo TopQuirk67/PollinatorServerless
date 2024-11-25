@@ -8,12 +8,12 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 def lambda_handler(event, context):
-    logger.info("Received event: %s", event)
+    # logger.info("Received event: %s", event)
     
     try:
         # Extract and log the base64 image data directly from the event
         image_bytes = event['image_bytes']
-        logger.info("Image bytes: %s", image_bytes)
+        # logger.info("Image bytes: %s", image_bytes)
 
         # Decode the base64 image data
         try:
@@ -43,7 +43,6 @@ def lambda_handler(event, context):
 
         # Define the regular expression pattern
         pattern = r'\d{1,2}:\d{2}.*?Stats.*?(Beginner|Good Start|Moving Up|Good|Solid|Nice|Great|Amazing|Genius|Queen Bee) \d+ You have found \d+ words'
-        # "8:19 Stats Yesterday More Genius 106 You have found 26 words Loyally Yahoo"
         # Search for the pattern in the detected text
         match = re.search(pattern, detected_text)
         

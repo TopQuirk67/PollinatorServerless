@@ -32,13 +32,6 @@ def go():
         my_words_by_length=my_words_by_length
     )
 
-# @app.route('/')
-# def index():
-#     pst_time = get_pst_time()
-#     data = {
-#         'pst_time': pst_time,
-#     }
-#     return render_template('go.html', data=data)
 
 def get_pst_time():
     date_format='%Y-%m-%d'
@@ -83,7 +76,6 @@ def my_words_to_dict_list_by_length(words):
 def get_nytbee_word_list(words):
 #+++++++++++++
     todays_date = get_pst_time()
-    # todays_solution_file = f'./todays_solution_{todays_date}.txt'
     # initialize outputs in case of errors we return something
     output_dicts = []
     summary_string = ''
@@ -156,16 +148,9 @@ def get_nytbee_word_list(words):
     if (puzz_tiles!=puzz_tiles2):
         summary_string = f'Error finding puzzle tiles {puzz_tiles} {puzz_tiles2}'
         return(output_dicts,summary_string,puzzle,my_words_by_length)
-    # this is for the webapp, not the serverless function
-    # write out to today's file after deleting any old solution files
-    # for f in glob.glob('todays_solution_*.txt'):
-    #     os.remove(f)
 
     invalid_words = [word for word in words if word not in all_words] # NUBO
     words = [word for word in words if word in all_words] # NUBO
-    # if (len(invalid_words)>0): # NUBO
-    #     print(f'Your words list includes words not in the solution:{invalid_words}') # NUBO
-
 
     # Here is where you need to do scores for the words
     word_lengths = [len(item) for item in words]
@@ -211,24 +196,10 @@ def get_nytbee_word_list(words):
     my_words_by_length = my_words_to_dict_list_by_length(words)
     return(output_dicts,summary_string,puzzle,my_words_by_length)
 
-
-# def lambda_handler(event, context):
-#     word_list = event['word_list']
-#     return_dict = get_nytbee_word_list(word_list)
-#     print(return_dict)
-#     with app.test_request_context('/'):
-#         response = index()
-#         return {
-#             'statusCode': 200,
-#             'body': response.get_data(as_text=True),
-#             'headers': {'Content-Type': 'text/html'}
-#         }
-
 def lambda_handler(event, context):
     # Extract the word list from the payload
     payload = json.loads(event['body'])
     word_list = payload.get('word_list', [])
-
 
     # Process the word list
     my_word_list = [word.lower() for word in word_list]

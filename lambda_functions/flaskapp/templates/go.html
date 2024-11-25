@@ -13,8 +13,8 @@
       font-size: 24px; /* Increase font size for headers */
   }
   table {
-      width: 80%; /* Adjust table width */
-      margin: 20px auto; /* Center the table */
+      width: 90%; /* Adjust table width */
+      margin: 5px auto; /* Center the table */
       border-spacing: 0; /* Remove spacing between cells */
   }
   table, th, td {
@@ -47,18 +47,18 @@
 </style>
 <h2>Today's Puzzle:<b>{{puzzle['center_tile']}}</b>{{puzzle['petal_tiles']}}</h2>
 <table>
-    <tr><th colspan="7">Still Looking</th></tr>
-    <tr><th>#</th><th colspan="3">POINTS</th><th colspan="3">WORDS</th></tr>
-    <tr><th>letters</th><th>avail</th><th>found</th><th>needed</th><th>avail</th><th>found</th><th>needed</th></tr>
+    <tr><th colspan="4">Still Looking</th></tr>
+    <tr><th>#</th><th colspan="3">WORDS</th></tr>
+    <tr><th>letters</th><th>avail</th><th>found</th><th>needed</th></tr>
     {% for line in query %}
-    <tr><td>{{line['k']}}</td><td>{{line['ptavail']}}</td><td>{{line['ptfound']}}</td><td>{{line['ptneeded']}}</td><td>{{line['wdavail']}}</td><td>{{line['wdfound']}}</td><td>{{line['wdneeded']}}</td></tr>
+    <tr><td>{{line['k']}}</td><td>{{line['wdavail']}}</td><td>{{line['wdfound']}}</td><td>{{line['wdneeded']}}</td></tr>
     {% endfor %}
 </table>
 <br>
 <table>
   <tr><th>letters</th><th>Your Words</th></tr>
   {% for line in my_words_by_length %}
-  <tr><td>{{line['k']}}</td><td style="text-align:left"><div style = "width:271px; word-wrap: break-word">{{line['words']}}</div></td></tr>
+  <tr><td>{{line['k']}}</td><td style="text-align:left"><div style = "width:202px; word-wrap: break-word">{{line['words']}}</div></td></tr>
   {% endfor %}
 </table>
 
