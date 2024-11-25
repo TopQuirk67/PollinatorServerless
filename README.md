@@ -1,21 +1,10 @@
 # PollinatorServerless
 
 ## TODOs
-- fix the page too big problem
-- add RAPIDAPI stuff to local copy from diff
-- fix the output from rapid - not the pollinator html for some reason
-- supply css for size problem 
 - rebuild
-- Convert RapidAPI accounts to paid
-- tear down everything and follow these instructions from scratch
-- reduce logging in lambdas
-- document how to use the twilio updater
 - include an architecture diagram
-- make sure you have README instructions without sam build/deploy and also has all the environmental definitions you need
 - tear down everything and pull to a new directory from origin and follow the README for installation to make sure it's all there in order
-- cleanup the lambda layer stuff, extra directories in the repo etc.
 - push back to origin!
-
 
 ### Set the environment variable for the S3 bucket name
 
@@ -136,13 +125,6 @@ cd ..
 zip flaskapp_package.zip flaskapp.py templates/*
 aws s3 cp flaskapp_package.zip s3://$POLLINATORARTIFACTBUCKET/lambda_functions/flaskapp/flaskapp_package.zip && \
 rm flaskapp_package.zip 
-cd ../../
-
-<!-- cd ../html-to-image && \
-zip -r html-to-image.zip html_to_image_api.py && \
-aws s3 cp html-to-image.zip s3://$POLLINATORARTIFACTBUCKET/lambda_functions/html-to-image/html-to-image.zip && \
-rm html-to-image.zip  -->
-
 cd ../..
 ```
 
@@ -172,6 +154,8 @@ aws cloudformation deploy \
 
 ### update the Twilio Webhook Url:
 
+Do this to update the url for the webhook in Twilio:
+
 ```
 cd twilio
 pipenv shell
@@ -183,76 +167,7 @@ python update_twilio_webhook.py
 aws cloudformation delete-stack --stack-name PollinatorServerless --profile g_h_scrabble
 ```
 
-
-
-# CODE GRAVEYARD: Create layers for Lambda dependencies 
-START HERE FOR REBUILD!
-```
-cd lambda_functions
-mkdir -p lambda_layer/webhook/python
-mkdir -p lambda_layer/ocr/python
-mkdir -p lambda_layer/flaskapp/python
-<!-- mkdir -p lambda_layer/html-to-image/python -->
-python3.9 -m pip install requests twilio boto3 -t lambda_layer/webhook/python
-python3.9 -m pip install boto3 -t lambda_layer/ocr/python
-python3.9 -m pip install flask==2.0.3 werkzeug==2.0.3 flask_lambda requests beautifulsoup4 pytz -t lambda_layer/flaskapp/python
-<!-- python3.9 -m pip install requests -t lambda_layer/html-to-image/python -->
-cd lambda_layer/webhook
-zip -r webhook.zip python
-aws s3 cp webhook.zip s3://$POLLINATORARTIFACTBUCKET/lambda_layers/webhook/webhook.zip --profile g_h_scrabble
-cd ../ocr
-zip -r ocr.zip python
-aws s3 cp ocr.zip s3://$POLLINATORARTIFACTBUCKET/lambda_layers/ocr/ocr.zip --profile g_h_scrabble
-cd ../flaskapp
-zip -r flaskapp.zip python
-aws s3 cp flaskapp.zip s3://$POLLINATORARTIFACTBUCKET/lambda_layers/flaskapp/flaskapp.zip --profile g_h_scrabble
-<!-- cd ../html_to_image
-zip -r html-to-image.zip python
-aws s3 cp html-to-image.zip s3://$POLLINATORARTIFACTBUCKET/lambda_layers/html-to-image/html-to-image.zip --profile g_h_scrabble -->
-```
-
-<!-- Setting up a single layer for index.js to use.  This layer is from https://github.com/alixaxel/chrome-aws-lambda where the readme gives this set of instructions:
-
-```
-cd ..
-zip -r9 ../imgkit_layer.zip .
-cd ..
-aws s3 cp puppeteer-layer.zip s3://$POLLINATORARTIFACTBUCKET/lambda_layers/html-to-image/puppeteer-layer.zip --profile g_h_scrabble
-``` -->
-
-```
-aws s3 cp imgkit_layer.zip s3://$POLLINATORARTIFACTBUCKET/layer/imgkit_layer.zip --profile g_h_scrabble
-```
-
-Resources:
-  MyLambdaFunction1:
-    Type: AWS::Lambda::Function
-    Properties:
-      FunctionName: MyLambdaFunction1
-      Handler: views.lambda_handler
-      Runtime: python3.9
-      Role: arn:aws:iam::YOUR_ACCOUNT_ID:role/YOUR_LAMBDA_EXECUTION_ROLE
-      Code:
-        S3Bucket: YOUR_S3_BUCKET_NAME
-        S3Key: path/to/your/lambda_function_code.zip
-      Layers:
-        - Ref: MyLayer1
-      Timeout: 30
-      MemorySize: 128
-
-
-
-
-
-<!-- Node js lambda function:
-
-```
-cd lambda_functions/html-to-image
-zip -r html-to-image.zip .
-aws s3 cp html-to-image.zip s3://$POLLINATORARTIFACTBUCKET/lambda_functions/html-to-image/html-to-image.zip --profile g_h_scrabble
-cd ../..
-``` -->
-
+### Example creating a requirements.txt
 ```
 cd lambda_functions/ocr
 pipenv --python 3.10
