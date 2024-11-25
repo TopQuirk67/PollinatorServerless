@@ -15,46 +15,10 @@ Parameters:
   S3OutputBucketName:
     Type: String
     Description: Public bucket for output objects 
-  # RapidApiEndpoint:
-  #   Type: String
-  #   Description: The RapidAPI endpoint URL for HTML to image conversion
-  # RapidApiHost:
-  #   Type: String
-  #   Description: The RapidAPI host
-  # RapidApiKey:
-  #   Type: String
-  #   Description: The RapidAPI key
+  SMSOutputMessage:
+    Type: String
+    Description: Buzz This Way -> 
 Resources:
-  # LambdaLayerWebhook:
-  #   Type: AWS::Lambda::LayerVersion
-  #   Properties:
-  #     LayerName: lambda-layer-webhook
-  #     Description: Dependencies for Webhook Lambda
-  #     Content:
-  #       S3Bucket: !Ref S3ArtifactBucketName
-  #       S3Key: lambda_layers/webhook/webhook_package.zip
-  #     CompatibleRuntimes:
-  #       - python3.9
-  # LambdaLayerOcr:
-  #   Type: AWS::Lambda::LayerVersion
-  #   Properties:
-  #     LayerName: lambda-layer-ocr
-  #     Description: Dependencies for Ocr Lambda
-  #     Content:
-  #       S3Bucket: !Ref S3ArtifactBucketName
-  #       S3Key: lambda_layers/ocr/ocr_package.zip
-  #     CompatibleRuntimes:
-  #       - python3.9
-  # LambdaLayerFlaskapp:
-  #   Type: AWS::Lambda::LayerVersion
-  #   Properties:
-  #     LayerName: lambda-layer-flaskapp
-  #     Description: Dependencies for Flaskapp Lambda
-  #     Content:
-  #       S3Bucket: !Ref S3ArtifactBucketName
-  #       S3Key: lambda_layers/flaskapp/flaskapp_package.zip
-  #     CompatibleRuntimes:
-  #       - python3.9
   ApiGatewayCloudWatchRole:
     Type: AWS::IAM::Role
     Properties:
@@ -259,8 +223,6 @@ Resources:
         - Arn
       Environment:
         Variables:
-          # OCR_API_ENDPOINT:
-          #   Fn::Sub: https://${ApiGatewayRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/ocr
           OCR_LAMBDA_FUNCTION_NAME: 
             Ref: OcrLambdaFunction
           FLASKAPP_LAMBDA_FUNCTION_NAME: 
@@ -273,17 +235,8 @@ Resources:
             Ref: TwilioPhoneNumber
           OUTPUT_BUCKET:
             Ref: S3OutputBucketName
-          # RAPIDAPI_ENDPOINT: !Ref RapidApiEndpoint
-          # RAPIDAPI_HOST: !Ref RapidApiHost
-          # RAPIDAPI_KEY: !Ref RapidApiKey
-      # Events:
-      #   Api:
-      #     Type: Api
-      #     Properties:
-      #       RestApiId:
-      #         Ref: ApiGatewayRestApi
-      #       Path: /sms
-      #       Method: post
+          OUTPUT_MESSAGE:
+            Ref: SMSOutputMessage
   OcrLambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
@@ -298,24 +251,6 @@ Resources:
         Fn::GetAtt:
         - OcrLambdaExecutionRole
         - Arn
-  #     Events:
-  #       Api:
-  #         Type: Api
-  #         Properties:
-  #           RestApiId:
-  #             Ref: ApiGatewayRestApi
-  #           Path: /ocr
-  #           Method: post
-  # ApiGatewayResourceOcr:
-  #   Type: AWS::ApiGateway::Resource
-  #   Properties:
-  #     ParentId:
-  #       Fn::GetAtt:
-  #       - ApiGatewayRestApi
-  #       - RootResourceId
-  #     PathPart: ocr
-  #     RestApiId:
-  #       Ref: ApiGatewayRestApi
   FlaskappLambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
@@ -330,57 +265,6 @@ Resources:
         Fn::GetAtt:
         - FlaskappLambdaExecutionRole
         - Arn
-  # RapidApiEndpoint:
-  #   Type: AWS::SSM::Parameter
-  #   Properties:
-  #     Name: /rapidapi/endpoint
-  #     Type: String
-  #     Value: "https://html-css-to-image4.p.rapidapi.com/image"
-  # RapidApiHost:
-  #   Type: AWS::SSM::Parameter
-  #   Properties:
-  #     Name: /rapidapi/host
-  #     Type: String
-  #     Value: "html-css-to-image4.p.rapidapi.com"
-  # ApiGatewayResourceSms:
-  #   Type: AWS::ApiGateway::Resource
-  #   Properties:
-  #     Handler: html_to_image_api.lambda_handler
-  #     Runtime: python3.9
-  #     Code:
-  #       S3Bucket: !Ref S3ArtifactBucketName
-  #       S3Key: lambda_functions/html-to-image/html-to-image_package.zip
-  #     Layers:
-  #       - !Ref HTMLtoImageLayer
-  #     MemorySize: 128
-  #     Timeout: 30
-  #     Environment:
-  #       Variables:
-  #         RAPIDAPI_ENDPOINT: !Ref RapidApiEndpoint
-  #         RAPIDAPI_HOST: !Ref RapidApiHost
-  #         RAPIDAPI_KEY: !Ref RapidApiKey
-  #     Role:
-  #       Fn::GetAtt:
-  #       - LambdaExecutionRole
-  #       - Arn
-      # Layers:
-      #   - !Ref PuppeteerLayer
-  # CreateimageLambdaFunction:
-  #   Type: AWS::Lambda::Function
-  #   Properties:
-  #     Handler: createimage.lambda_handler
-  #     Runtime: python3.9
-  #     Code:
-  #       S3Bucket: !Ref S3ArtifactBucketName
-  #       S3Key: lambda_functions/createimage/createimage_package.zip
-  #     Layers:
-  #       - !Ref CreateImageLayerArn
-  #     MemorySize: 128
-  #     Timeout: 30
-  #     Role:
-  #       Fn::GetAtt:
-  #       - LambdaExecutionRole
-  #       - Arn
 Outputs:
   ApiGatewayUrlSms:
     Description: URL of the API Gateway
