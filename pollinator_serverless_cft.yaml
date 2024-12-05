@@ -18,7 +18,7 @@ Parameters:
   SMSOutputMessage:
     Type: String
     Description: Output message for SMS
-    Default: "Buzz This Way ->"
+    Default: "Buzz This Way ~>"
 Resources:
   ApiGatewayCloudWatchRole:
     Type: AWS::IAM::Role
