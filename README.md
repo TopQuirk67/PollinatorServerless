@@ -1,7 +1,8 @@
 # PollinatorServerless
 
+![Architecture Diagram](PollinatorServerless.png)
+
 ## TODOs
-- include an architecture diagram
 - next update could try to address the issue with incorrectly OCR'ed words: 12/16/24 led to epee, teepee, tepee where the t's were tau's! see the google sheet for additional notes at https://docs.google.com/document/d/1YBe_dGZeyPwd2levf_1-tvus7EXCV0_T0gVJlVxrf4I
 
 ### Set the environment variable for the S3 bucket name
