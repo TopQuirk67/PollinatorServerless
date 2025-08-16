@@ -5,7 +5,7 @@
       "Prefix": "",
       "Status": "Enabled",
       "Expiration": {
-        "Days": 1
+        "Days": 15
       }
     }
   ]

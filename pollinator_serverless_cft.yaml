@@ -185,6 +185,11 @@ Resources:
             Action:
             - rekognition:DetectText
             Resource: '*'
+          - Effect: Allow
+            Action:
+              - "s3:GetObject"
+            Resource: 
+              - !Sub "arn:aws:s3:::${S3ArtifactBucketName}/*"
   FlaskappLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -224,6 +229,8 @@ Resources:
         - Arn
       Environment:
         Variables:
+          S3_ARTIFACT_BUCKET_NAME: 
+            Ref: S3ArtifactBucketName
           OCR_LAMBDA_FUNCTION_NAME: 
             Ref: OcrLambdaFunction
           FLASKAPP_LAMBDA_FUNCTION_NAME: 
@@ -252,6 +259,10 @@ Resources:
         Fn::GetAtt:
         - OcrLambdaExecutionRole
         - Arn
+      Environment:
+        Variables:
+          S3_ARTIFACT_BUCKET_NAME: 
+            Ref: S3ArtifactBucketName
   FlaskappLambdaFunction:
     Type: AWS::Lambda::Function
     Properties:

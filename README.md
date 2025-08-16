@@ -14,9 +14,6 @@ $TWILIOPHONENUMBER
 $TWILIOPHONENUMBERSID
 $TWILIOACCTSID
 $TWILIOAUTHTOKEN
-$RAPIDAPI_ENDPOINT
-$RAPIDAPI_HOST
-$RAPIDAPI_KEY
 ```
 
 We need environmental variables for two S3 buckets:
@@ -36,7 +33,12 @@ aws s3api create-bucket --bucket $POLLINATORARTIFACTBUCKET  \
 --profile g_h_scrabble
 ```
 
-### Create output bucket with 1 hr lifecycle policy.
+### Upload the translations.json file to the artifacts bucket
+```
+aws s3 cp translations.json s3://$POLLINATORARTIFACTBUCKET/translations.json --profile g_h_scrabble
+```
+
+### Create output bucket with 15 day lifecycle policy.
 ```
 aws s3api create-bucket --bucket $POLLINATOROUTPUTBUCKET \
 --region us-west-2 \
@@ -56,7 +58,7 @@ The `lifecyclepolicy.json` policy is:
       "Prefix": "",
       "Status": "Enabled",
       "Expiration": {
-        "Days": 1
+        "Days": 15
       }
     }
   ]
@@ -174,7 +176,7 @@ python update_twilio_webhook.py
 
 ### To delete errant stack:
 ```
-aws cloudformation delete-stack --stack-name PollinatorServerless --profile g_h_scrabble
+aws cloudformation delete-stack --stack-name PollinatorServerlessStack --profile g_h_scrabble
 ```
 
 ### Example creating a requirements.txt

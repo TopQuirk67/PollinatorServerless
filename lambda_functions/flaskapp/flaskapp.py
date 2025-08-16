@@ -23,13 +23,14 @@ def go():
     query = request.args.get('query', '')
     my_word_list = query.lower().split(' ')
     my_word_list = sorted(list(set([word.lower() for word in my_word_list])))
-    word_match_list, summary_string, puzzle, my_words_by_length = get_nytbee_word_list(my_word_list)
+    word_match_list, summary_string, puzzle, my_words_by_length, pangram_info = get_nytbee_word_list(my_word_list)
     return render_template(
         'go.html',
         query=word_match_list,
         summary=summary_string,
         puzzle=puzzle,
-        my_words_by_length=my_words_by_length
+        my_words_by_length=my_words_by_length,
+        pangram_info=pangram_info
     )
 
 
@@ -194,7 +195,24 @@ def get_nytbee_word_list(words):
         summary_string += 'Warning invalid words: ' + ','.join(invalid_words)
     puzzle = {'center_tile':center_tile.upper(),'petal_tiles':''.join(sorted(list(set(puzz_tiles) - set(center_tile))))}
     my_words_by_length = my_words_to_dict_list_by_length(words)
-    return(output_dicts,summary_string,puzzle,my_words_by_length)
+    # Count pangrams
+    my_pangrams_found = count_pangrams(words, puzz_tiles)
+    total_pangrams_available = count_valid_pangrams(all_words, puzz_tiles)
+    pangram_info = {'found': my_pangrams_found, 'total': total_pangrams_available}
+
+    return(output_dicts,summary_string,puzzle,my_words_by_length,pangram_info)
+
+def count_pangrams(words, puzz_tiles):
+    """Count pangrams (words using all 7 letters)"""
+    puzz_set = set(puzz_tiles)
+    pangrams = [word for word in words if set(word.lower()) == puzz_set]
+    return len(pangrams)
+
+def count_valid_pangrams(all_words, puzz_tiles):
+    """Count total possible pangrams from valid word list"""
+    puzz_set = set(puzz_tiles)
+    pangrams = [word for word in all_words if set(word.lower()) == puzz_set]
+    return len(pangrams)
 
 def lambda_handler(event, context):
     # Extract the word list from the payload
@@ -204,7 +222,7 @@ def lambda_handler(event, context):
     # Process the word list
     my_word_list = [word.lower() for word in word_list]
     my_word_list = sorted(list(set([word.lower() for word in my_word_list])))
-    word_match_list, summary_string, puzzle, my_words_by_length = get_nytbee_word_list(my_word_list)
+    word_match_list, summary_string, puzzle, my_words_by_length, pangram_info = get_nytbee_word_list(my_word_list)
 
     print(my_words_by_length)
     # Ensure the Flask application context is pushed
@@ -215,7 +233,8 @@ def lambda_handler(event, context):
             query=word_match_list,
             summary=summary_string,
             puzzle=puzzle,
-            my_words_by_length=my_words_by_length
+            my_words_by_length=my_words_by_length,
+            pangram_info=pangram_info
         )
 
 

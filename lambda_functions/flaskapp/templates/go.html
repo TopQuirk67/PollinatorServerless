@@ -53,6 +53,7 @@
     {% for line in query %}
     <tr><td>{{line['k']}}</td><td>{{line['wdavail']}}</td><td>{{line['wdfound']}}</td><td>{{line['wdneeded']}}</td></tr>
     {% endfor %}
+    <tr><td>pans</td><td>{{pangram_info['total']}}</td><td>{{pangram_info['found']}}</td><td>{{pangram_info['total'] - pangram_info['found']}}</td></tr>
 </table>
 <br>
 <table>

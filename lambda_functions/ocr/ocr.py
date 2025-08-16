@@ -3,9 +3,43 @@ import base64
 import json
 import logging
 import re
+import os
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+
+# Add new function to load translations
+# def load_translations():
+#     try:
+#         s3 = boto3.client('s3')
+#         bucket_name = os.environ.get('S3_ARTIFACT_BUCKET')
+#         response = s3.get_object(Bucket=bucket_name, Key='translations.json')
+#         translations = json.loads(response['Body'].read())
+#         return translations
+#     except Exception as e:
+#         logger.warning(f"Could not load translations: {e}")
+#         return {}
+def load_translations():
+    try:
+        s3 = boto3.client('s3')
+        bucket_name = os.environ.get('S3_ARTIFACT_BUCKET_NAME')
+        response = s3.get_object(Bucket=bucket_name, Key='translations.json')
+        translations = json.loads(response['Body'].read().decode('utf-8'))  # Add .decode('utf-8')
+        return translations
+    except Exception as e:
+        logger.warning(f"Could not load translations: {e}")
+        return {}
+
+# Add new function to apply translations
+def apply_translations(words, translations):
+    translated_words = []
+    for word in words:
+        if word in translations:
+            translated_words.append(translations[word])
+        else:
+            translated_words.append(word)
+    return translated_words
+
 
 def lambda_handler(event, context):
     # logger.info("Received event: %s", event)
@@ -51,12 +85,19 @@ def lambda_handler(event, context):
             segment = detected_text[match.end():]
             
             # Process the segment to extract words
-            words = segment.split()
+            words = [word.lower() for word in segment.split()]
             
             # Combine all words, remove duplicates, and sort alphabetically
             combined_words = sorted(set(words))
-            
-            logger.info("Combined words: %s", combined_words)  # Log the unique words for debugging
+
+            logger.info("Raw Combined words: %s", combined_words)  # Log the unique words for debugging
+
+            translations = load_translations()
+            if translations:
+                combined_words = apply_translations(combined_words, translations)
+                combined_words = sorted(set(combined_words))  # Re-sort after translation
+
+            logger.info("Final Combined words: %s", combined_words)  # Log the unique words for debugging
 
             return {
                 'statusCode': 200,
