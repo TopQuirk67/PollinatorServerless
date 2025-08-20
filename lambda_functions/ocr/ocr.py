@@ -9,16 +9,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 # Add new function to load translations
-# def load_translations():
-#     try:
-#         s3 = boto3.client('s3')
-#         bucket_name = os.environ.get('S3_ARTIFACT_BUCKET')
-#         response = s3.get_object(Bucket=bucket_name, Key='translations.json')
-#         translations = json.loads(response['Body'].read())
-#         return translations
-#     except Exception as e:
-#         logger.warning(f"Could not load translations: {e}")
-#         return {}
+
 def load_translations():
     try:
         s3 = boto3.client('s3')
@@ -35,6 +26,7 @@ def apply_translations(words, translations):
     translated_words = []
     for word in words:
         if word in translations:
+            logger.info(f"Translating word: {word} to {translations[word]}")
             translated_words.append(translations[word])
         else:
             translated_words.append(word)
@@ -85,7 +77,8 @@ def lambda_handler(event, context):
             segment = detected_text[match.end():]
             
             # Process the segment to extract words
-            words = [word.lower() for word in segment.split()]
+            # words = [word.lower() for word in segment.split()]
+            words = [word for word in segment.split()]
             
             # Combine all words, remove duplicates, and sort alphabetically
             combined_words = sorted(set(words))
