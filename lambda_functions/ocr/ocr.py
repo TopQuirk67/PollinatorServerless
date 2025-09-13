@@ -25,9 +25,13 @@ def load_translations():
 def apply_translations(words, translations):
     translated_words = []
     for word in words:
+        # Try exact match first, then lowercase
         if word in translations:
-            logger.info(f"Translating word: {word} to {translations[word]}")
+            logger.info(f"Translating {word} -> {translations[word]}")
             translated_words.append(translations[word])
+        elif word.lower() in translations:
+            logger.info(f"Translating {word} (lowercase) -> {translations[word.lower()]}")
+            translated_words.append(translations[word.lower()])
         else:
             translated_words.append(word)
     return translated_words

@@ -179,6 +179,13 @@ python update_twilio_webhook.py
 aws cloudformation delete-stack --stack-name PollinatorServerlessStack --profile g_h_scrabble
 ```
 
+### Updating word errors
+
+Sometimes pollinator fumbles over doing OCR for certain words.  These are accounted for in translations.json.  When you find a new word at the end of the HTML output in the errors,
+- open the HTML
+- copy paste the word into translations.json with its translation
+- `aws s3 cp translations.json s3://$POLLINATORARTIFACTBUCKET/translations.json --profile g_h_scrabble`
+
 ### Example creating a requirements.txt
 ```
 cd lambda_functions/ocr
